@@ -54,10 +54,7 @@ class TestTextChunker:
     def test_chunk_document(self):
         """Test document chunking."""
         chunker = TextChunker(chunk_size=100, chunk_overlap=20)
-        doc = Document(
-            page_content="This is a long text " * 50,
-            metadata={"source": "test.txt"}
-        )
+        doc = Document(page_content="This is a long text " * 50, metadata={"source": "test.txt"})
         chunks = chunker.chunk_document(doc)
         assert len(chunks) > 1
 
@@ -65,8 +62,7 @@ class TestTextChunker:
         """Test that metadata is preserved."""
         chunker = TextChunker()
         doc = Document(
-            page_content="Test content",
-            metadata={"source": "test.txt", "custom": "value"}
+            page_content="Test content", metadata={"source": "test.txt", "custom": "value"}
         )
         chunks = chunker.chunk_document(doc)
         assert chunks[0].metadata["source"] == "test.txt"

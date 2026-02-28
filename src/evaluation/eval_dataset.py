@@ -52,11 +52,13 @@ class EvalDatasetGenerator:
             for topic, questions in SAMPLE_QUESTIONS.items():
                 if topic in source:
                     for q in questions:
-                        qa_pairs.append({
-                            "question": q,
-                            "answer": doc.page_content[:150] + "...",
-                        })
+                        qa_pairs.append(
+                            {
+                                "question": q,
+                                "answer": doc.page_content[:150] + "...",
+                            }
+                        )
                     break
             if len(qa_pairs) >= self.dataset_size:
                 break
-        return qa_pairs[:self.dataset_size]
+        return qa_pairs[: self.dataset_size]

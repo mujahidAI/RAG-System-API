@@ -9,7 +9,6 @@ This module contains all prompt templates used for:
 
 from langchain_core.prompts import PromptTemplate
 
-
 ANSWER_GENERATION_TEMPLATE = """You are a helpful AI assistant. Use the following context to answer the user question.
 
 Guidelines:

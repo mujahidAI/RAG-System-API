@@ -25,14 +25,8 @@ class TestPromptTemplates:
     def test_format_context(self):
         """Test context formatting."""
         docs = [
-            Document(
-                page_content="Test content 1",
-                metadata={"source_file": "doc1.txt"}
-            ),
-            Document(
-                page_content="Test content 2",
-                metadata={"source_file": "doc2.txt"}
-            ),
+            Document(page_content="Test content 1", metadata={"source_file": "doc1.txt"}),
+            Document(page_content="Test content 2", metadata={"source_file": "doc2.txt"}),
         ]
         context = format_context(docs, max_docs=2)
         assert "Test content 1" in context
@@ -42,8 +36,7 @@ class TestPromptTemplates:
         """Test source formatting."""
         docs = [
             Document(
-                page_content="Test content",
-                metadata={"source_file": "doc1.txt", "chunk_index": 0}
+                page_content="Test content", metadata={"source_file": "doc1.txt", "chunk_index": 0}
             ),
         ]
         sources = format_sources(docs)

@@ -10,24 +10,19 @@ from pydantic import BaseModel, Field
 
 class IngestRequest(BaseModel):
     """Request model for document ingestion."""
-    
+
     directory_path: Optional[str] = Field(
-        default=None,
-        description="Path to directory containing documents"
+        default=None, description="Path to directory containing documents"
     )
     file_paths: Optional[list[str]] = Field(
-        default=None,
-        description="List of specific file paths to ingest"
+        default=None, description="List of specific file paths to ingest"
     )
-    batch_size: int = Field(
-        default=100,
-        description="Batch size for embedding"
-    )
+    batch_size: int = Field(default=100, description="Batch size for embedding")
 
 
 class IngestResponse(BaseModel):
     """Response model for document ingestion."""
-    
+
     success: bool
     message: str
     documents_loaded: int = 0
@@ -38,28 +33,17 @@ class IngestResponse(BaseModel):
 
 class QueryRequest(BaseModel):
     """Request model for query endpoint."""
-    
-    question: str = Field(
-        ...,
-        description="User question",
-        min_length=1,
-        max_length=1000
-    )
-    top_k: int = Field(
-        default=4,
-        description="Number of documents to retrieve",
-        ge=1,
-        le=20
-    )
+
+    question: str = Field(..., description="User question", min_length=1, max_length=1000)
+    top_k: int = Field(default=4, description="Number of documents to retrieve", ge=1, le=20)
     include_sources: bool = Field(
-        default=True,
-        description="Whether to include source documents in response"
+        default=True, description="Whether to include source documents in response"
     )
 
 
 class SourceDocument(BaseModel):
     """Source document model."""
-    
+
     content: str
     source: str
     chunk_index: int
@@ -67,7 +51,7 @@ class SourceDocument(BaseModel):
 
 class QueryResponse(BaseModel):
     """Response model for query endpoint."""
-    
+
     success: bool
     answer: str
     sources: list[SourceDocument] = []
@@ -78,22 +62,16 @@ class QueryResponse(BaseModel):
 
 class EvaluateRequest(BaseModel):
     """Request model for evaluation endpoint."""
-    
+
     questions: list[str] = Field(
-        ...,
-        description="List of questions to evaluate",
-        min_length=1,
-        max_length=50
+        ..., description="List of questions to evaluate", min_length=1, max_length=50
     )
-    output_path: Optional[str] = Field(
-        default=None,
-        description="Path to save evaluation report"
-    )
+    output_path: Optional[str] = Field(default=None, description="Path to save evaluation report")
 
 
 class EvaluateResponse(BaseModel):
     """Response model for evaluation endpoint."""
-    
+
     success: bool
     metrics: dict[str, float] = {}
     result_count: int = 0
@@ -103,7 +81,7 @@ class EvaluateResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     """Response model for health check."""
-    
+
     status: str
     version: str
     services: dict[str, str]
