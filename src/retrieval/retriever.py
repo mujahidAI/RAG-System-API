@@ -160,7 +160,13 @@ class HybridRetriever:
             Merged and deduplicated list of Document objects.
         """
         dense_docs = self.dense_retriever.invoke(query)
-        sparse_docs = self.sparse_retriever.invoke(query)
+
+        # Sparse retrieval is optional — requires documents loaded in memory
+        if self._documents:
+            sparse_docs = self.sparse_retriever.invoke(query)
+        else:
+            logger.info("No documents set for BM25, using dense retrieval only")
+            sparse_docs = []
 
         # Score by weighted reciprocal rank fusion (RRF)
         doc_scores: dict[str, tuple[Document, float]] = {}

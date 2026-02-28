@@ -40,7 +40,6 @@ def get_generator() -> Generator:
     settings = get_settings()
 
     llm = ChatGroq(
-        api_key=settings.llm.groq_api_key,
         model=settings.llm.groq_model,
         temperature=settings.llm.temperature,
         max_tokens=settings.llm.max_tokens,

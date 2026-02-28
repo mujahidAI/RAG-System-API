@@ -48,7 +48,6 @@ class Reranker:
 
         self._cross_encoder = HuggingFaceCrossEncoder(
             model_name=self.model_name,
-            max_length=512,
         )
 
         logger.info("Cross-encoder reranker initialized")

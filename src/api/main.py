@@ -6,6 +6,9 @@ for the RAG system including ingestion, querying, and evaluation.
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+
+load_dotenv()  # Load .env into os.environ for third-party libs (e.g. ChatGroq)
 
 from src.api.middleware import setup_middleware
 from src.api.routes import ingest, query, evaluate
@@ -18,9 +21,9 @@ logger = get_logger(__name__)
 
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application."""
-    
+
     settings = get_settings()
-    
+
     app = FastAPI(
         title="RAG System API",
         description="Production-grade RAG system with FastAPI, Qdrant, and LangChain",
@@ -28,7 +31,7 @@ def create_app() -> FastAPI:
         docs_url="/docs",
         redoc_url="/redoc",
     )
-    
+
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
@@ -36,13 +39,13 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    
+
     setup_middleware(app)
-    
+
     app.include_router(ingest.router)
     app.include_router(query.router)
     app.include_router(evaluate.router)
-    
+
     @app.get("/", response_model=dict, tags=["Root"])
     async def root():
         """Root endpoint."""
@@ -51,7 +54,7 @@ def create_app() -> FastAPI:
             "version": "1.0.0",
             "docs": "/docs",
         }
-    
+
     @app.get("/health", response_model=HealthResponse, tags=["Health"])
     async def health_check():
         """Health check endpoint."""
@@ -63,9 +66,9 @@ def create_app() -> FastAPI:
                 "qdrant": "checking",
             },
         )
-    
+
     logger.info("FastAPI application created")
-    
+
     return app
 
 
@@ -74,9 +77,9 @@ app = create_app()
 
 if __name__ == "__main__":
     import uvicorn
-    
+
     settings = get_settings()
-    
+
     uvicorn.run(
         "src.api.main:app",
         host=settings.api.host,

@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 from langchain_core.documents import Document
-from langchain_qdrant import Qdrant
+from langchain_qdrant import QdrantVectorStore
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams
 
@@ -21,14 +21,14 @@ logger = get_logger(__name__)
 
 class QdrantStore:
     """Qdrant vector store wrapper with LangChain integration.
-    
+
     Provides methods for:
     - Creating and managing collections
     - Upserting documents with embeddings
     - Similarity search with filtering
     - Collection deletion
     """
-    
+
     def __init__(
         self,
         embedder: Embedder,
@@ -38,7 +38,7 @@ class QdrantStore:
         api_key: Optional[str] = None,
     ):
         """Initialize the Qdrant store.
-        
+
         Args:
             embedder: Embedder instance for generating vectors
             collection_name: Name of the collection
@@ -47,23 +47,26 @@ class QdrantStore:
             api_key: Optional API key for authentication
         """
         settings = get_settings()
-        
+
         self.collection_name = collection_name or settings.qdrant.collection_name
         self.host = host or settings.qdrant.host
         self.port = port or settings.qdrant.port
         self.api_key = api_key or settings.qdrant.api_key
-        
+
         self.embedder = embedder
-        
+
         self._client: Optional[QdrantClient] = None
-        self._vectorstore: Optional[Qdrant] = None
-        
-        logger.info("QdrantStore initialized", extra={
-            "collection_name": self.collection_name,
-            "host": self.host,
-            "port": self.port,
-        })
-    
+        self._vectorstore: Optional[QdrantVectorStore] = None
+
+        logger.info(
+            "QdrantStore initialized",
+            extra={
+                "collection_name": self.collection_name,
+                "host": self.host,
+                "port": self.port,
+            },
+        )
+
     @property
     def client(self) -> QdrantClient:
         """Get or create Qdrant client."""
@@ -74,21 +77,20 @@ class QdrantStore:
                 api_key=self.api_key,
             )
         return self._client
-    
+
     @property
-    def vectorstore(self) -> Qdrant:
+    def vectorstore(self) -> QdrantVectorStore:
         """Get or create LangChain Qdrant vectorstore."""
         if self._vectorstore is None:
-            self._vectorstore = Qdrant.from_documents(
-                documents=[],
+            self.create_collection()
+            self._vectorstore = QdrantVectorStore.from_existing_collection(
                 embedding=self.embedder,
                 collection_name=self.collection_name,
-                host=self.host,
-                port=self.port,
+                url=f"http://{self.host}:{self.port}",
                 api_key=self.api_key,
             )
         return self._vectorstore
-    
+
     def create_collection(
         self,
         vector_size: Optional[int] = None,
@@ -98,16 +100,16 @@ class QdrantStore:
         """Create a Qdrant collection."""
         if vector_size is None:
             vector_size = self.embedder.embedding_dimension
-        
+
         if force_recreate:
             self.delete_collection()
-        
+
         collections = self.client.get_collections().collections
         collection_names = [c.name for c in collections]
-        
+
         if self.collection_name in collection_names:
             return False
-        
+
         self.client.create_collection(
             collection_name=self.collection_name,
             vectors_config=VectorParams(
@@ -116,7 +118,7 @@ class QdrantStore:
             ),
         )
         return True
-    
+
     def upsert_documents(
         self,
         documents: list[Document],
@@ -125,27 +127,15 @@ class QdrantStore:
         """Upsert documents with their embeddings into Qdrant."""
         if not documents:
             return {"upserted_count": 0, "batch_count": 0}
-        
-        texts = [doc.page_content for doc in documents]
-        metadatas = [doc.metadata for doc in documents]
-        
-        self._vectorstore = Qdrant.from_texts(
-            texts=texts,
-            embedding=self.embedder,
-            metadatas=metadatas,
-            collection_name=self.collection_name,
-            host=self.host,
-            port=self.port,
-            api_key=self.api_key,
-            batch_size=batch_size,
-        )
-        
+
+        self.vectorstore.add_documents(documents, batch_size=batch_size)
+
         return {
             "upserted_count": len(documents),
             "batch_count": (len(documents) + batch_size - 1) // batch_size,
             "collection_name": self.collection_name,
         }
-    
+
     def similarity_search(
         self,
         query: str,
@@ -160,7 +150,7 @@ class QdrantStore:
             filter=filter,
             score_threshold=score_threshold,
         )
-    
+
     def similarity_search_with_score(
         self,
         query: str,
@@ -173,7 +163,7 @@ class QdrantStore:
             k=k,
             filter=filter,
         )
-    
+
     def delete_collection(self) -> bool:
         """Delete the collection."""
         try:
@@ -182,7 +172,7 @@ class QdrantStore:
             return True
         except Exception:
             return False
-    
+
     def get_collection_info(self) -> dict[str, Any]:
         """Get collection information."""
         try:
@@ -195,7 +185,7 @@ class QdrantStore:
             }
         except Exception as e:
             return {"error": str(e)}
-    
+
     def exists(self) -> bool:
         """Check if collection exists."""
         try:
@@ -209,6 +199,7 @@ class QdrantStore:
 def get_qdrant_store(embedder: Optional[Embedder] = None) -> QdrantStore:
     """Get a configured QdrantStore instance."""
     from src.embeddings.embedder import get_embedder
+
     if embedder is None:
         embedder = get_embedder()
     return QdrantStore(embedder=embedder)
