@@ -1,39 +1,91 @@
 # Generation
 
-## What This Component Does
+## What It Does
 
-Generates answers using LLM with retrieved context, including source citations.
+Generates natural language answers by combining retrieved context with user question via LLM. Includes source citations and fallback for insufficient context.
 
-## Why It's Needed
+## Why It Exists
 
-- Provides natural language answers
-- Grounds responses in retrieved context
-- Includes citations for verification
+Without generation, retrieval only returns documents. The LLM synthesizes information into a readable answer with citations—making the system useful for end users.
+
+## How It Fits In
+
+```
+[Retriever] → Top docs → [Reranker] → Top-3 → [Generator]
+                                                        ↓
+                                              [Prompt Template]
+                                                        ↓
+                                                      [LLM]
+                                                        ↓
+                                            Answer + Sources
+```
 
 ## Key Design Decisions
 
-1. **Prompt**: Instructs LLM to cite sources
-2. **Fallback**: Says "I don't know" if insufficient context
-3. **LCEL Chain**: Query transform | Retrieve | Re-rank | Prompt | LLM
+- **Cite sources**: Prompt instructs LLM to include `[Source: filename]`
+- **"I don't know" fallback**: If context is insufficient, LLM is instructed to say so
+- **LCEL chain**: Enables future extensibility (retries, fallbacks)
+
+## Configuration
+
+| Variable | Default | Effect |
+|----------|---------|--------|
+| `LLM_PROVIDER` | ollama | LLM backend |
+| `OLLAMA_MODEL` | mistral | Model name |
+| `LLM_TEMPERATURE` | 0.1 | Creativity vs determinism |
+| `LLM_MAX_TOKENS` | 512 | Max response length |
 
 ## Code Walkthrough
 
-See `src/generation/generator.py`:
-
+`src/generation/generator.py` - `Generator.generate()`:
 ```python
-chain = prompt | llm
-answer = chain.invoke({"context": context, "question": query})
+def generate(self, query: str) -> dict:
+    # 1. Transform query (if enabled)
+    transformed_queries = [query]
+    if self.query_transformer:
+        transformed_queries = self.query_transformer.transform(query)
+    
+    # 2. Retrieve and rerank
+    all_docs = []
+    for q in transformed_queries:
+        docs = self.retriever.retrieve(q)
+        all_docs.extend(docs)
+    final_docs = self._deduplicate_documents(all_docs)
+    
+    # 3. Re-rank if enabled
+    if self.reranker:
+        reranked = self.reranker.rerank(query, final_docs)
+        final_docs = [doc for doc, score in reranked]
+    
+    # 4. Generate
+    context = format_context(final_docs)
+    answer = self.chain.invoke({"context": context, "question": query})
+    return {"answer": answer, "sources": format_sources(final_docs)}
 ```
 
-See `src/generation/prompt_templates.py`:
+Prompt in `src/generation/prompt_templates.py`:
+```python
+ANSWER_GENERATION_TEMPLATE = '''Answer based on the context.
+If insufficient, say "I don't know."
+Cite sources as [Source: filename].
 
+Context: {context}
+Question: {question}'''
 ```
-Answer only based on the provided context.
-Cite sources using [Source: filename]
-Say "I don't know" if insufficient context.
-```
 
-## Connection to Other Components
+## Common Errors & Fixes
 
-- Input: Re-ranked documents + question
-- Output: Answer + sources to API
+- **Error**: LLM not responding
+  - Fix: Check Ollama running: `ollama list`
+
+- **Error**: Context too long
+  - Fix: Reduce `RERANKER_TOP_K` or chunk size
+
+- **Error**: No citations in answer
+  - Fix: Check prompt includes citation instruction; verify metadata present
+
+## Related Files
+
+- `src/generation/generator.py` - Generator class
+- `src/generation/prompt_templates.py` - All prompts
+- `src/utils/config.py` - LLMSettings

@@ -1,33 +1,66 @@
 # Retrieval
 
-## What This Component Does
+## What It Does
 
-Combines dense (semantic) and sparse (BM25) retrieval methods using weighted ensemble.
+Finds relevant documents using hybrid search: 60% dense (semantic, Qdrant) + 40% sparse (keyword, BM25). Returns top-k candidates for re-ranking.
 
-## Why It's Needed
+## Why It Exists
 
-- Dense: Finds semantically similar documents
-- Sparse: Finds keyword-matched documents
-- Hybrid: Best of both worlds
+Dense alone misses exact keyword matches. Sparse alone misses semantic matches. Hybrid combines both—catching synonyms (dense) and exact terms (sparse)—for higher recall.
+
+## How It Fits In
+
+```
+Query → [HybridRetriever] → Combined top-10 results
+                  ↓
+            [Dense: Qdrant] → Semantic similarity
+            [Sparse: BM25] → Keyword matching
+```
 
 ## Key Design Decisions
 
-1. **Dense Weight**: 0.6 (60% semantic)
-2. **Sparse Weight**: 0.4 (40% keyword)
-3. **Top-K**: 10 documents retrieved
+- **60/40 weight split**: Favor semantic but keep keyword contribution
+- **Top-10 before re-ranking**: Enough candidates for reranker to filter
+- **EnsembleRetriever**: LangChain's standard hybrid implementation
+
+## Configuration
+
+| Variable | Default | Effect |
+|----------|---------|--------|
+| `RETRIEVAL_TOP_K` | 10 | Documents retrieved before re-ranking |
+| `RETRIEVAL_DENSE_WEIGHT` | 0.6 | Weight for semantic search |
+| `RETRIEVAL_SPARSE_WEIGHT` | 0.4 | Weight for BM25 |
 
 ## Code Walkthrough
 
-See `src/retrieval/retriever.py`:
-
+`src/retrieval/retriever.py` - `HybridRetriever.__init__()`:
 ```python
-ensemble = EnsembleRetriever(
-    retrievers=[dense_retriever, sparse_retriever],
-    weights=[0.6, 0.4],
+self._ensemble_retriever = EnsembleRetriever(
+    retrievers=[self.dense_retriever, self.sparse_retriever],
+    weights=[self.dense_weight, self.sparse_weight],  # [0.6, 0.4]
 )
 ```
 
-## Connection to Other Components
+`retrieve()` at line 83:
+```python
+def retrieve(self, query: str) -> list[Document]:
+    results = self.ensemble_retriever.invoke(query)
+    return results
+```
 
-- Input: Query from API/generator
-- Output: Documents to reranker
+## Common Errors & Fixes
+
+- **Error**: BM25 returns no results
+  - Fix: Ensure documents were set via `set_documents()` before retrieval
+
+- **Error**: Empty dense results
+  - Fix: Check Qdrant has data: `store.get_collection_info()`
+
+- **Error**: Weights don't sum to 1
+  - Fix: Adjust in config; currently accepts any but warns if skewed
+
+## Related Files
+
+- `src/retrieval/retriever.py` - HybridRetriever class
+- `src/retrieval/reranker.py` - Re-ranks retrieved results
+- `src/utils/config.py` - RetrievalSettings

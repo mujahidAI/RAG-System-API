@@ -2,35 +2,51 @@
 
 ## Learning Path
 
-This table of contents provides an ordered learning path through the RAG system codebase. Read each document in order to fully understand the entire system.
+Read in order from foundations to production deployment.
 
-| # | Document | Description |
-|---|----------|-------------|
-| 1 | [01_project_overview.md](01_project_overview.md) | High-level overview of the RAG system architecture, components, and tech stack |
-| 2 | [02_data_ingestion.md](02_data_ingestion.md) | Document loading from multiple formats (TXT, PDF, DOCX, HTML) |
-| 3 | [03_chunking_strategy.md](03_chunking_strategy.md) | Text chunking using RecursiveCharacterTextSplitter for optimal retrieval |
-| 4 | [04_embeddings.md](04_embeddings.md) | HuggingFace embeddings with BAAI/bge-large-en-v1.5 model |
-| 5 | [05_vector_store.md](05_vector_store.md) | Qdrant vector database integration for document storage |
-| 6 | [06_retrieval.md](06_retrieval.md) | Hybrid retrieval combining dense (semantic) and sparse (BM25) methods |
-| 7 | [07_reranking.md](07_reranking.md) | Cross-encoder re-ranking to improve retrieval quality |
-| 8 | [08_query_transformation.md](08_query_transformation.md) | HyDE and multi-query expansion for better retrieval |
-| 9 | [09_generation.md](09_generation.md) | LLM chain for answer generation with context |
-| 10 | [10_evaluation.md](10_evaluatibon.md) | RAGAS metrics for pipeline evaluation |
-| 11 | [11_api_design.md](11_api_design.md) | FastAPI endpoints and middleware |
-| 12 | [12_deployment.md](12_deployment.md) | Docker and Docker Compose deployment |
+---
+
+## Phase 1 — Foundations
+
+| Doc | What You'll Learn | Read Time |
+|-----|-------------------|-----------|
+| [01_project_overview.md](01_project_overview.md) | System architecture, data flow, and configuration | 4 min |
+| [02_data_ingestion.md](02_data_ingestion.md) | Loading multi-format documents, cleaning, chunking | 5 min |
+| [03_chunking_strategy.md](03_chunking_strategy.md) | Recursive splitting with overlap for context | 3 min |
+| [04_embeddings.md](04_embeddings.md) | Text-to-vector conversion with BAAI model | 3 min |
+
+---
+
+## Phase 2 — Core Pipeline
+
+| Doc | What You'll Learn | Read Time |
+|-----|-------------------|-----------|
+| [05_vector_store.md](05_vector_store.md) | Qdrant for similarity search at scale | 3 min |
+| [06_retrieval.md](06_retrieval.md) | Hybrid dense + sparse retrieval | 4 min |
+| [07_reranking.md](07_reranking.md) | Cross-encoder for precision | 3 min |
+| [08_query_transformation.md](08_query_transformation.md) | HyDE and multi-query expansion | 3 min |
+| [09_generation.md](09_generation.md) | LLM chain with context and citations | 4 min |
+
+---
+
+## Phase 3 — Production
+
+| Doc | What You'll Learn | Read Time |
+|-----|-------------------|-----------|
+| [10_evaluation.md](10_evaluation.md) | RAGAS metrics for pipeline quality | 3 min |
+| [11_api_design.md](11_api_design.md) | FastAPI endpoints and middleware | 4 min |
+| [12_deployment.md](12_deployment.md) | Docker Compose setup and运维 | 4 min |
+
+---
 
 ## Quick Reference
 
-- **API Endpoints**: `/docs` for Swagger UI
-- **Health Check**: `GET /health`
-- **Ingest**: `POST /ingest`
-- **Query**: `POST /query`
-- **Evaluate**: `POST /evaluate`
-
-## Prerequisites
-
-Before reading the documentation:
-1. Python 3.11+
-2. Docker and Docker Compose
-3. Ollama (for LLM)
-4. Basic understanding of RAG architecture
+| Need | Doc |
+|------|-----|
+| Add new document format | 02_data_ingestion.md |
+| Change chunk size | 03_chunking_strategy.md |
+| Switch embedding model | 04_embeddings.md |
+| Adjust retrieval weights | 06_retrieval.md |
+| Enable query expansion | 08_query_transformation.md |
+| Run evaluation | 10_evaluation.md |
+| Deploy to production | 12_deployment.md |
