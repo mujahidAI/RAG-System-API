@@ -1,35 +1,68 @@
 # Evaluation
 
-## What This Component Does
+## What It Does
 
-Evaluates RAG pipeline using RAGAS metrics: faithfulness, answer relevancy, context precision, context recall.
+Measures pipeline quality using RAGAS metrics: faithfulness, answer relevancy, context precision, and context recall. Outputs scores as percentages with color-coded indicators.
 
-## Why It's Needed
+## Why It Exists
 
-- Quantifies pipeline quality
-- Identifies weaknesses
-- Guides improvements
+Without metrics, there's no way to measure if the system is improving or degrading. Evaluation quantifies retrieval precision, generation accuracy, and overall RAG quality.
+
+## How It Fits In
+
+```
+[User Questions] → [Generator] → Answers + Contexts
+                                               ↓
+                                    [RAGEvaluator]
+                                               ↓
+                              Metrics: Faithfulness, Relevancy, Precision, Recall
+```
 
 ## Key Design Decisions
 
-1. **RAGAS**: Industry-standard RAG evaluation
-2. **Metrics**: Faithfulness, Relevancy, Precision, Recall
-3. **Dataset**: 20 Q&A pairs from documents
+- **4 core metrics**: Covers both retrieval and generation aspects
+- **Percentage display**: More intuitive than raw scores
+- **Color coding**: Green (>70%), yellow (40-70%), red (<40%)
+
+## Configuration
+
+| Variable | Default | Effect |
+|----------|---------|--------|
+| `EVAL_DATASET_SIZE` | 20 | Q&A pairs for evaluation |
+| `EVAL_OUTPUT_PATH` | data/eval_report.json | Report save location |
 
 ## Code Walkthrough
 
-See `src/evaluation/evaluator.py`:
-
+`src/evaluation/evaluator.py` - `RAGEvaluator.evaluate()`:
 ```python
-metrics = {
-    "faithfulness": score,
-    "answer_relevancy": score,
-    "context_precision": score,
-    "context_recall": score,
-}
+def evaluate(self, questions: list[str]) -> dict:
+    results = []
+    for question in questions:
+        result = self.generator.generate(question)
+        results.append({
+            "question": question,
+            "answer": result["answer"],
+            "contexts": [s["content"] for s in result["sources"]],
+        })
+    metrics = self._calculate_metrics(results)
+    return {"results": results, "metrics": metrics}
 ```
 
-## Connection to Other Components
+`src/evaluation/eval_dataset.py` - generates test questions from document topics.
 
-- Input: Questions, generator
-- Output: Metrics report to API
+## Common Errors & Fixes
+
+- **Error**: Evaluation takes very long
+  - Fix: Normal for LLM calls; reduce `EVAL_DATASET_SIZE`
+
+- **Error**: All scores are zero
+  - Fix: Check documents are ingested; check LLM is working
+
+- **Error**: No ground truth available
+  - Fix: System uses self-evaluation; not as accurate as human-labeled data
+
+## Related Files
+
+- `src/evaluation/evaluator.py` - RAGEvaluator class
+- `src/evaluation/eval_dataset.py` - Test question generation
+- `src/api/routes/evaluate.py` - API endpoint

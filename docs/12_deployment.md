@@ -1,48 +1,76 @@
 # Deployment
 
-## What This Component Does
+## What It Does
 
-Docker containerization for the entire RAG system.
+Containers the entire RAG system using Docker. Runs FastAPI and Qdrant as separate services with health checks, persistent storage, and networking.
 
-## Why It's Needed
+## Why It Exists
 
-- Reproducible deployments
-- Isolated environments
-- Easy scaling
+Deployment ensures reproducibility. Docker guarantees the same environment across machines. Separate services allow independent scaling—Qdrant can grow without restarting the API.
 
-## Docker Compose Services
+## Architecture
 
-1. **app**: FastAPI on port 8000
-2. **qdrant**: Vector DB on port 6333
+```
+┌─────────────────────────────────────┐
+│  docker-compose.yml                 │
+│                                     │
+│  ┌─────────────┐   ┌─────────────┐ │
+│  │ app (8000)  │   │ qdrant     │ │
+│  │ FastAPI     │──▶│ (6333/6334)│ │
+│  └─────────────┘   └─────────────┘ │
+│         ↓                          │
+│   /api/* (proxied)                 │
+└─────────────────────────────────────┘
+```
 
 ## Key Design Decisions
 
-1. **Multi-stage build**: Minimal image size
-2. **Non-root user**: Security best practice
-3. **Health checks**: Service availability
-4. **Volume**: Persistent Qdrant storage
+- **Multi-stage Dockerfile**: Reduces final image size
+- **Non-root user**: Security—container cannot modify system files
+- **Health checks**: Ensures Qdrant is ready before API starts
+- **Persistent volume**: Qdrant data survives restarts
 
-## Deployment Steps
+## Configuration
+
+| Variable | Default | Effect |
+|----------|---------|--------|
+| Ports | 8000, 6333, 6334 | API, Qdrant REST, Qdrant gRPC |
+
+## Running
 
 ```bash
-# Start services
+# Start all services
 docker-compose up -d
 
-# Check health
-curl http://localhost:8000/health
+# Check status
+docker-compose ps
 
-# Ingest documents
-curl -X POST http://localhost:8000/ingest \
-  -H "Content-Type: application/json" \
-  -d '{"directory_path": "/app/data/raw"}'
+# View logs
+docker-compose logs -f app
 
-# Query
-curl -X POST http://localhost:8000/query \
-  -H "Content-Type: application/json" \
-  -d '{"question": "What is quantum mechanics?"}'
+# Stop
+docker-compose down
 ```
 
-## Connection to Other Components
+For local development without Docker:
+```bash
+docker run -d -p 6333:6333 qdrant/qdrant
+uvicorn src.api.main:app --reload
+```
 
-- All services containerized
-- Environment variables from .env
+## Common Errors & Fixes
+
+- **Error**: App container exits immediately
+  - Fix: Check Qdrant running; check `OLLAMA_BASE_URL` if using Ollama
+
+- **Error**: Cannot connect to Qdrant from app
+  - Fix: Use service name "qdrant" as host in Docker network
+
+- **Error**: Data lost on restart
+  - Fix: Volume `qdrant_data` persists—don't use `--volumes` flag with down
+
+## Related Files
+
+- `docker-compose.yml` - Service orchestration
+- `docker/Dockerfile` - App container image
+- `.env` - Environment variables passed to containers
