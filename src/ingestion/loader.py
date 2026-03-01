@@ -55,6 +55,11 @@ class DocumentLoader:
         Args:
             encoding: Text encoding for text files (default: utf-8)
         """
+        # The encoding parameter specifies how text files should be decoded
+        # when reading from disk. Many text files use UTF-8, but some may use
+        # different encodings (e.g., latin-1, utf-16). Setting the encoding ensures
+        # that files are read correctly regardless of the system default.
+        # If the wrong encoding is used, file reading can fail or produce garbled text.
         self.encoding = encoding
         self.settings = get_settings()
         logger.info("DocumentLoader initialized", extra={"encoding": encoding})
