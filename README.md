@@ -20,21 +20,21 @@ A complete RAG pipeline that ingests documents (TXT, PDF, DOCX, HTML), stores em
         ▼                    ▼                    ▼
 ┌───────────────┐   ┌──────────────┐   ┌────────────────┐
 │  Ingestion    │   │   Query      │   │   Evaluate     │
-│  Pipeline     │   │   Pipeline    │   │   Pipeline     │
+│  Pipeline     │   │   Pipeline   │   │   Pipeline     │
 └───────┬───────┘   └───────┬──────┘   └───────┬────────┘
-        │                   │                    │
-        ▼                   ▼                    ▼
+        │                   │                  │
+        ▼                   ▼                  ▼
    Documents           Generator            Metrics
    (files)            + Retriever          (RAGAS)
-        │                   │                    │
-        ▼                   ▼                    ▼
+        │                   │                  │
+        ▼                   ▼                  ▼
    ┌────────┐        ┌──────────┐        ┌─────────┐
-   │ Chunker │──────▶│ Qdrant   │◀───────│  LLM    │
+   │ Chunker│──────▶ │ Qdrant  │◀───────│   LLM   │
    └────────┘        └──────────┘        └─────────┘
         │                   │
         ▼                   ▼
    ┌────────┐        ┌──────────┐
-   │Embedder│───────▶│ Vector   │
+   │Embedder│──────▶ │ Vector   │
    └────────┘        │ Store    │
                      └──────────┘
 ```
@@ -43,7 +43,7 @@ A complete RAG pipeline that ingests documents (TXT, PDF, DOCX, HTML), stores em
 
 ```bash
 # 1. Clone and setup
-cd RAG_openCode
+cd RAG-system-api
 cp .env.example .env
 
 # 2. Start Qdrant
